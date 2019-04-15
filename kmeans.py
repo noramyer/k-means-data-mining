@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 
 #Author: Nora Myer
-#Date: 3/26/19
+#Date: 4/10/19
 
 args = ""
 columns = {}
@@ -30,14 +30,16 @@ def genKmeans(database, k, n, e, output_file):
 
     #select k points as the initial centroids
     centroids = assign_centroids(k, database)
+    newcentroids = centroids
 
-    while iteration < n or converged():
+    while iteration < n and not converged(centroids, newcentroids, e)):
         #assign points to clusters
+        centroids = newcentroids
         assignments = assign_points(database, centroids)
         print("Assignments = " + str(assignments))
 
         #update cluster centroids
-        centroids = update_centroids()
+        newcentroids = update_centroids()
         iteration += 1
 
     assignments = assign_points(database, centroids)
@@ -46,21 +48,26 @@ def genKmeans(database, k, n, e, output_file):
 def assign_centroids(k, database):
     #for each cluster k, initialize centroid to be the mean of the columns of all the rows
     centroids = {
-        i: np.mean(database, axis=0)
+        i: randn(k, data.shape[1]) + np.mean(database, axis=0)
         for i in range(k)
     }
     return centroids
 
 def assign_points(database, centroids):
-    distances = np.zeros([database.shape[1], len(centroids)])
+    distances = np.zeros([database.shape[0], len(centroids)])
     assignments = {}
     for c in range(len(centroids)):
-        for row in database:
-            distances[row][c] = linalg.norm(database[row]-curmeans[c], axis = 1)
+        for row in range(database.shape[0]):
+            distances[row][c] = np.linalg.norm(database[row]-centroids[c])
 
-    min_distances = argmin(distances, axis=1)
-    print(min_distances)
+    min_distances = np.argmin(distances, axis=1)
 
+    for row in range(database.shape[0]):
+        if not min_distances[row] in assignments:
+            assignments[min_distances[row]] = set()
+        assignments[min_distances[row]].add(row)
+
+    return assignments
 
 def update_centroids(centroids, database, assignments):
     for index in range(len(centroids)):
@@ -79,7 +86,11 @@ def read_database(database_file):
 
     return input
 
-def converged():
+def converged(centroids, newcentroids, e):
+    dist = sum(linalg.norm(means - newmeans, axis = 0))
+    if dist < e:
+        return True;
+
     return False
 
 #main function
@@ -89,10 +100,9 @@ def main():
     #get database
     database = read_database(str(args.database_file))
 
-    assignments = assign_centroids(int(args.k), database)
-    print(len(assignments[0]))
-
-
+    centroids = assign_centroids(int(args.k), database)
+    assignments = assign_points(database, centroids)
+    print(assignments)
 
     #x = np.arange(20).reshape(5, 4)
     #rows = [1, 3]
