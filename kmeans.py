@@ -25,21 +25,20 @@ def parse_data_file_args():
     args = parser.parse_args()
 
 def genKmeans(database, k, n, e, output_file):
-    return None
     iteration = 0
 
     #select k points as the initial centroids
     centroids = assign_centroids(k, database)
     newcentroids = centroids
 
-    while iteration < n and not converged(centroids, newcentroids, e)):
+    while iteration < n and not converged(centroids, newcentroids, e):
         #assign points to clusters
         centroids = newcentroids
         assignments = assign_points(database, centroids)
-        print("Assignments = " + str(assignments))
 
         #update cluster centroids
-        newcentroids = update_centroids()
+        update_centroids(centroids, database, assignments)
+        newcentroids = centroids
         iteration += 1
 
     assignments = assign_points(database, centroids)
@@ -48,7 +47,7 @@ def genKmeans(database, k, n, e, output_file):
 def assign_centroids(k, database):
     #for each cluster k, initialize centroid to be the mean of the columns of all the rows
     centroids = {
-        i: randn(k, data.shape[1]) + np.mean(database, axis=0)
+        i: np.random.randn(k, database.shape[1]) + np.mean(database,axis = 0)
         for i in range(k)
     }
     return centroids
@@ -71,14 +70,15 @@ def assign_points(database, centroids):
 
 def update_centroids(centroids, database, assignments):
     for index in range(len(centroids)):
-        rows = assignments[index]
-        clustered = np.take(database, rows, axis=0)
-        centroids[index] = np.means(clustered, axis=0)
+        if index in assignments:
+            rows = assignments[index]
+            clustered = np.take(database, list(rows), axis=0)
+            centroids[index] = np.mean(clustered, axis=0)
 
 def output_clusters(output_file, assignments):
     f = open(output_file, "w+")
     for cluster in assignments.keys():
-        f.write(str(cluster) + ": " + str(' '.join(sorted(assignments[cluster]))) + "\n")
+        f.write(str(cluster) + ": " + str(' '.join(str(x) for x in sorted(assignments[cluster]))) + "\n")
 
 #Read in database from args input file
 def read_database(database_file):
@@ -99,16 +99,10 @@ def main():
     parse_data_file_args()
     #get database
     database = read_database(str(args.database_file))
+    genKmeans(database, int(args.k), int(args.max_iters), float(args.eps), str(args.output_file))
+    #centroids = assign_centroids(int(args.k), database)
+    #assignments = assign_points(database, centroids)
 
-    centroids = assign_centroids(int(args.k), database)
-    assignments = assign_points(database, centroids)
-    print(assignments)
-
-    #x = np.arange(20).reshape(5, 4)
-    #rows = [1, 3]
-    ##print(x)
-    #print("\n")
-    #print(np.take(x, rows, axis=0))
 
 
 if __name__ == "__main__":
