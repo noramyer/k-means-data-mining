@@ -53,13 +53,49 @@ def genKmeans(database, k, n, e, output_file):
     #print clusters to output file
     output_clusters(output_file, assignments)
 
-#initialize centroids based on randomness, std, and mean
+#initialize centroids based on k-means ++ algorithm
+#****BONUS****: initializing incrementally based on min distance proporional probilities from k++ algorithm
 def assign_centroids(k, database):
-    #for each cluster k, initialize centroid
-    centroids = {
-        i: np.random.randn(k, database.shape[1]) * np.std(database, axis = 0)
-        for i in range(k)
-    }
+    #begin by initializing one cluster to a random point in the database
+    centroids = {}
+    centroids[0] = database[np.random.randint(0, database.shape[0])]
+    #then, for i < total number of clusters
+    for i in range(1, k):
+        distances = np.zeros([database.shape[0], len(centroids)])
+        #get the distances to the existing centroids from each points
+        for c in range(i):
+            for row in range(database.shape[0]):
+                #calculate eucliedian distance for each
+                distances[row][c] = np.linalg.norm(database[row]-centroids[c])
+
+        #get index of the minimal distance to a single cluster
+        if i > 1:
+            mins = np.argmin(distances, axis=1)
+            d = [distances[x][mins[x]] for x in range(database.shape[0])]
+        else:
+            d = distances
+
+        #get the proportion of the min distance to a cluster to the sum of all distances
+        probabilities = d / np.sum(d)
+
+        #get a random number from 0 - 1.0
+        number = np.random.random()
+
+        sum = 0.0
+        index = 0
+        #Treat the probailities matrix as a distribution
+        #find where the random number falls in the distribution
+        #and pick that index for the next centroid point.
+        #This serves as picking a random point based on the weighted probailities
+        for j in range(database.shape[0]):
+            if number > sum and number < sum + probabilities[j]:
+                index = j
+                break
+            sum = sum + probabilities[j]
+
+        #assign new centroid to that point found
+        centroids[i] = database[index]
+
     return centroids
 
 #assign points based on centroid values
