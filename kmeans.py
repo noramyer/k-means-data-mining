@@ -145,8 +145,8 @@ def output_clusters(output_file, assignments):
     f = open(output_file, "w+")
 
     #for each cluster, print the assigned point indices
-    for cluster in assignments.keys():
-        f.write(str(cluster) + ": " + str(' '.join(str(x) for x in sorted(assignments[cluster]))) + "\n")
+    for index in range(len(assignments)):
+        f.write(str(index) + ": " + str(' '.join(str(x) for x in sorted(assignments[index]))) + "\n")
 
 #Read in database from args input file
 def read_database(database_file):
